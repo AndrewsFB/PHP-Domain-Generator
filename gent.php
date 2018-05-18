@@ -4,17 +4,16 @@
 // CODE GENERATION
 // Begin...
 
-$pathInput = "./Input";
-$pathOutput = "./Output";
+require_once "./config.php";
 
-$dirInput = dir($pathInput);
+$dirInput = dir(PATH_INPUT);
  
-if(!is_dir("$pathInput")) {
-  mkdir("$pathInput");
+if(!is_dir(PATH_INPUT)) {
+  mkdir(PATH_INPUT);
 }
 
-if(!is_dir("$pathOutput")) {
-  mkdir("$pathOutput");
+if(!is_dir(PATH_OUTPUT)) {
+  mkdir(PATH_OUTPUT);
 }
 
 while($arquivo = $dirInput -> read()){
@@ -23,16 +22,16 @@ while($arquivo = $dirInput -> read()){
     continue;
   }
   
-  if(!is_dir("$pathOutput/Entities")) {
-    mkdir("$pathOutput/Entities");
+  if(!is_dir(PATH_OUTPUT."/Entities")) {
+    mkdir(PATH_OUTPUT."/Entities");
   }
   
   $className = str_replace(".entity","", $arquivo);
 
-  $inputFile = fopen("$pathInput/$arquivo","r");
+  $inputFile = fopen(PATH_INPUT."/$arquivo","r");
 
   $outputFileName = "$className.class.php";
-  $outputFile = fopen("$pathOutput/Entities/$outputFileName", "w");
+  $outputFile = fopen(PATH_OUTPUT."/Entities/$outputFileName", "w");
 
   fwrite($outputFile, "<?php\n\n");
   fwrite($outputFile, "class $className {\n\n");
@@ -103,7 +102,7 @@ while($arquivo = $dirInput -> read()){
 }
 
 $dirInput -> close();
-createValidationExceptionFile($pathOutput);
+createValidationExceptionFile(PATH_OUTPUT);
 
 // End...
 // CODE GENERATION
