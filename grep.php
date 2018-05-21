@@ -48,7 +48,16 @@ while($arquivo = $dirInput -> read()){
   fwrite($outputFile, "    public function save($".lcfirst($className)."){\n\n");
   fwrite($outputFile, "    }\n\n");    
 
-  fwrite($outputFile, "    public function delete($".lcfirst($className)."){\n\n");
+  $deleteSql = "DELETE FROM $className WHERE Id = :id";
+  fwrite($outputFile, "    public function delete($"."id){\n");
+  fwrite($outputFile, "        try {\n");
+  fwrite($outputFile, "            $"."pdo = $"."this->UnitOfWork->getPDO();\n");
+  fwrite($outputFile, "            $"."stmt = $"."pdo->prepare(\"$deleteSql\");\n");
+  fwrite($outputFile, "            $"."pdo->bindParam(\":id\", $"."id);\n");
+  fwrite($outputFile, "            $"."stmt->execute();\n");
+  fwrite($outputFile, "        } catch(Exception $"."e) {\n");
+  fwrite($outputFile, "            throw new PersistenceException($"."e->getMessage());\n");
+  fwrite($outputFile, "        }\n");  
   fwrite($outputFile, "    }\n\n");    
 
   $attrs = array();
@@ -61,11 +70,15 @@ while($arquivo = $dirInput -> read()){
     $attr = explode("-",$linha)[0];
     $sql = "SELECT * FROM $className WHERE $attr = :value";
     fwrite($outputFile, "    public function getBy$attr($".lcfirst($attr)."){\n");
-    fwrite($outputFile, "        $"."pdo = $"."this->UnitOfWork->getPDO();\n");
-    fwrite($outputFile, "        $"."stmt = $"."pdo->prepare(\"$sql\");\n");
-    fwrite($outputFile, "        $"."pdo->bindParam(\":value\", $".lcfirst($attr).");\n");
-    fwrite($outputFile, "        $"."stmt->execute();\n");
-    fwrite($outputFile, "        return $"."this->mountEntities($"."stmt);\n");
+    fwrite($outputFile, "        try {\n");
+    fwrite($outputFile, "            $"."pdo = $"."this->UnitOfWork->getPDO();\n");
+    fwrite($outputFile, "            $"."stmt = $"."pdo->prepare(\"$sql\");\n");
+    fwrite($outputFile, "            $"."pdo->bindParam(\":value\", $".lcfirst($attr).");\n");
+    fwrite($outputFile, "            $"."stmt->execute();\n");
+    fwrite($outputFile, "            return $"."this->mountEntities($"."stmt);\n");
+    fwrite($outputFile, "        } catch(Exception $"."e) {\n");
+    fwrite($outputFile, "            throw new PersistenceException($"."e->getMessage());\n");
+    fwrite($outputFile, "        }\n");
     fwrite($outputFile, "    }\n\n");        
   } 
 
@@ -80,6 +93,8 @@ while($arquivo = $dirInput -> read()){
 }
 
 createUnitOfWorkFile(PATH_OUTPUT);
+
+createPersistenceExceptionFile(PATH_OUTPUT);
 
 $dirInput -> close();
 
@@ -120,6 +135,20 @@ function createUnitOfWorkFile($pathOutput){
   $unitOfWorkFile = fopen("$pathOutput/Repositories/UnitOfWork.class.php", "w");
   fwrite($unitOfWorkFile, $UnitOfWorkCode);
   fclose($unitOfWorkFile);
+}
+
+function createPersistenceExceptionFile($pathOutput){
+  if(!is_dir("$pathOutput/Exceptions")) {
+    mkdir("$pathOutput/Exceptions");
+  }  
+
+  $validationExceptionCode = "<?php \n\n".
+                             "class PersistenceException extends Exception {\n".
+                             "}\n\n";  
+
+  $validationExceptionFile = fopen("$pathOutput/Exceptions/PersistenceException.class.php", "w");
+  fwrite($validationExceptionFile, $validationExceptionCode);
+  fclose($validationExceptionFile);
 }
 
 // End...
