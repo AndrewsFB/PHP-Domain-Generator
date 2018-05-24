@@ -36,6 +36,8 @@ while($arquivo = $dirInput -> read()){
   fwrite($outputFile, "<?php\n\n");
   fwrite($outputFile, "class $className {\n\n");
 
+  fwrite($outputFile, "    private $"."Id;\n");
+
   $attrs = array();
   
   while (!feof ($inputFile)) {
@@ -49,6 +51,15 @@ while($arquivo = $dirInput -> read()){
   }
 
   fwrite($outputFile, "\n");
+
+  fwrite($outputFile, "    public function getId(){\n");
+  fwrite($outputFile, "        return $"."this->$"."Id;");
+  fwrite($outputFile, "\n    }\n\n");
+
+  fwrite($outputFile, "    public function setId($"."value){\n");
+  fwrite($outputFile, getIntegerValidation("Id"));      
+  fwrite($outputFile, "        $"."this->$"."Id = $"."value;");
+  fwrite($outputFile, "\n    }\n\n");
 
   foreach($attrs as $attr){
     

@@ -38,26 +38,8 @@ while($arquivo = $dirInput -> read()){
 
   fwrite($outputFile, "    private $"."UnitOfWork;\n\n");
 
-  fwrite($outputFile, "    private function mountEntities($"."stmt){\n\n");
-  fwrite($outputFile, "    }\n\n");      
-
   fwrite($outputFile, "    public function __construct($"."unitOfWork){\n");
   fwrite($outputFile, "        $"."this->UnitOfWork = $"."unitOfWork;\n");    
-  fwrite($outputFile, "    }\n\n");    
-
-  fwrite($outputFile, "    public function save($".lcfirst($className)."){\n\n");
-  fwrite($outputFile, "    }\n\n");    
-
-  $deleteSql = "DELETE FROM $className WHERE Id = :id";
-  fwrite($outputFile, "    public function delete($"."id){\n");
-  fwrite($outputFile, "        try {\n");
-  fwrite($outputFile, "            $"."pdo = $"."this->UnitOfWork->getPDO();\n");
-  fwrite($outputFile, "            $"."stmt = $"."pdo->prepare(\"$deleteSql\");\n");
-  fwrite($outputFile, "            $"."pdo->bindParam(\":id\", $"."id);\n");
-  fwrite($outputFile, "            $"."stmt->execute();\n");
-  fwrite($outputFile, "        } catch(Exception $"."e) {\n");
-  fwrite($outputFile, "            throw new PersistenceException($"."e->getMessage());\n");
-  fwrite($outputFile, "        }\n");  
   fwrite($outputFile, "    }\n\n");    
 
   $attrs = array();
@@ -66,7 +48,7 @@ while($arquivo = $dirInput -> read()){
     $linha = fgets($inputFile);
     $linha = str_replace("\r", "", $linha);
     $linha = str_replace("\n", "", $linha);
-    $attrs[] = $linha;
+    $attrs[] = explode("-", $linha)[0];
     $attr = explode("-",$linha)[0];
     $sql = "SELECT * FROM $className WHERE $attr = :value";
     fwrite($outputFile, "    public function getBy$attr($".lcfirst($attr)."){\n");
@@ -82,10 +64,47 @@ while($arquivo = $dirInput -> read()){
     fwrite($outputFile, "    }\n\n");        
   } 
 
+  fwrite($outputFile, "    private function mountEntities($"."stmt){\n\n");
+  fwrite($outputFile, "    }\n\n");      
+
+  $attrsInsert = Implode(",", $attrs);
+  $attrsInsertValues = Implode(",:", $attrs);
+  $sqlInsert = "INSERT INTO $className($attrsInsert) VALUES(:$attrsInsertValues)";
+  $attrsUpdate = array();
   foreach($attrs as $attr){
-    
+    $attrsUpdate[] = "$attr=:$attr";
   }
-  
+  $attrsUpdate = Implode(",", $attrsUpdate);
+  $sqlUpdate = "UPDATE $className SET $attrsUpdate WHERE Id = $".lcfirst($className)."->Id";  
+  fwrite($outputFile, "    public function save($".lcfirst($className)."){\n");   
+  fwrite($outputFile, "        try {\n");    
+  fwrite($outputFile, "            $"."pdo = $"."this->UnitOfWork->getPDO();\n");       
+  fwrite($outputFile, "            if($". lcfirst($className) ."->Id > 0) {\n");  
+  fwrite($outputFile, "                $"."stmt = $"."pdo->prepare(\"$sqlUpdate\");\n");
+  fwrite($outputFile, "            } else {\n");  
+  fwrite($outputFile, "                $"."stmt = $"."pdo->prepare(\"$sqlInsert\");\n");   
+  fwrite($outputFile, "            }\n");    
+  foreach($attrs as $attr){
+    fwrite($outputFile, "            $"."pdo->bindParam(\":$attr\", $".lcfirst($className)."->"."$attr".");\n");
+  }  
+  fwrite($outputFile, "            $"."stmt->execute();\n");  
+  fwrite($outputFile, "        } catch(Exception $"."e) {\n");
+  fwrite($outputFile, "            throw new PersistenceException($"."e->getMessage());\n");
+  fwrite($outputFile, "        }\n");  
+  fwrite($outputFile, "    }\n\n");    
+
+  $deleteSql = "DELETE FROM $className WHERE Id = :id";
+  fwrite($outputFile, "    public function delete($".lcfirst($className)."){\n");
+  fwrite($outputFile, "        try {\n");
+  fwrite($outputFile, "            $"."pdo = $"."this->UnitOfWork->getPDO();\n");
+  fwrite($outputFile, "            $"."stmt = $"."pdo->prepare(\"$deleteSql\");\n");
+  fwrite($outputFile, "            $"."pdo->bindParam(\":id\", $".lcfirst($className)."->Id);\n");
+  fwrite($outputFile, "            $"."stmt->execute();\n");
+  fwrite($outputFile, "        } catch(Exception $"."e) {\n");
+  fwrite($outputFile, "            throw new PersistenceException($"."e->getMessage());\n");
+  fwrite($outputFile, "        }\n");  
+  fwrite($outputFile, "    }\n\n");    
+ 
   fwrite($outputFile, "\n}");
 
   fclose ($inputFile);
