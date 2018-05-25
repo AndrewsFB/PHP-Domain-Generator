@@ -55,17 +55,14 @@ while($arquivo = $dirInput -> read()){
     fwrite($outputFile, "        try {\n");
     fwrite($outputFile, "            $"."pdo = $"."this->UnitOfWork->getPDO();\n");
     fwrite($outputFile, "            $"."stmt = $"."pdo->prepare(\"$sql\");\n");
-    fwrite($outputFile, "            $"."pdo->bindParam(\":value\", $".lcfirst($attr).");\n");
+    fwrite($outputFile, "            $"."stmt->bindValue(\":value\", $".lcfirst($attr).");\n");
     fwrite($outputFile, "            $"."stmt->execute();\n");
-    fwrite($outputFile, "            return $"."this->mountEntities($"."stmt);\n");
+    fwrite($outputFile, "            return $"."stmt->fetchAll(PDO::FETCH_CLASS);\n");
     fwrite($outputFile, "        } catch(Exception $"."e) {\n");
     fwrite($outputFile, "            throw new PersistenceException($"."e->getMessage());\n");
     fwrite($outputFile, "        }\n");
     fwrite($outputFile, "    }\n\n");        
   } 
-
-  fwrite($outputFile, "    private function mountEntities($"."stmt){\n\n");
-  fwrite($outputFile, "    }\n\n");      
 
   $attrsInsert = Implode(",", $attrs);
   $attrsInsertValues = Implode(",:", $attrs);
@@ -75,17 +72,18 @@ while($arquivo = $dirInput -> read()){
     $attrsUpdate[] = "$attr=:$attr";
   }
   $attrsUpdate = Implode(",", $attrsUpdate);
-  $sqlUpdate = "UPDATE $className SET $attrsUpdate WHERE Id = $".lcfirst($className)."->Id";  
+  $sqlUpdate = "UPDATE $className SET $attrsUpdate WHERE Id = :Id";  
   fwrite($outputFile, "    public function save($".lcfirst($className)."){\n");   
   fwrite($outputFile, "        try {\n");    
   fwrite($outputFile, "            $"."pdo = $"."this->UnitOfWork->getPDO();\n");       
-  fwrite($outputFile, "            if($". lcfirst($className) ."->Id > 0) {\n");  
+  fwrite($outputFile, "            if($". lcfirst($className) ."->getId() > 0) {\n");  
   fwrite($outputFile, "                $"."stmt = $"."pdo->prepare(\"$sqlUpdate\");\n");
+  fwrite($outputFile, "                $"."stmt->bindValue(\":Id\", $".lcfirst($className)."->"."getId()".");\n");    
   fwrite($outputFile, "            } else {\n");  
   fwrite($outputFile, "                $"."stmt = $"."pdo->prepare(\"$sqlInsert\");\n");   
   fwrite($outputFile, "            }\n");    
   foreach($attrs as $attr){
-    fwrite($outputFile, "            $"."pdo->bindParam(\":$attr\", $".lcfirst($className)."->"."$attr".");\n");
+    fwrite($outputFile, "            $"."stmt->bindValue(\":$attr\", $".lcfirst($className)."->"."get$attr()".");\n");
   }  
   fwrite($outputFile, "            $"."stmt->execute();\n");  
   fwrite($outputFile, "        } catch(Exception $"."e) {\n");
@@ -98,7 +96,7 @@ while($arquivo = $dirInput -> read()){
   fwrite($outputFile, "        try {\n");
   fwrite($outputFile, "            $"."pdo = $"."this->UnitOfWork->getPDO();\n");
   fwrite($outputFile, "            $"."stmt = $"."pdo->prepare(\"$deleteSql\");\n");
-  fwrite($outputFile, "            $"."pdo->bindParam(\":id\", $".lcfirst($className)."->Id);\n");
+  fwrite($outputFile, "            $"."stmt->bindValue(\":id\", $".lcfirst($className)."->getId());\n");
   fwrite($outputFile, "            $"."stmt->execute();\n");
   fwrite($outputFile, "        } catch(Exception $"."e) {\n");
   fwrite($outputFile, "            throw new PersistenceException($"."e->getMessage());\n");
@@ -135,7 +133,7 @@ function createUnitOfWorkFile($pathOutput){
                     "class UnitOfWork {\n\n".
                     "    private $"."PDO;\n\n".                              
                     "    public function __construct(){\n".
-                    "        $"."this->PDO = new PDO(\"". CONNECTION_STRING."\");\n".                                                  
+                    "        $"."this->PDO = new PDO(\"". CONNECTION_STRING."\", \"".DB_USER."\", \"".DB_PASSWORD."\");\n".                                                  
                     "    }\n\n".
                     "    public function beginTransaction(){\n".
                     "        $"."this->PDO->beginTransaction();\n".                                                  
